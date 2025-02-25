@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf/:/etc/nginx/conf.d/:rw
+      - ./nginx/logs:/var/log/nginx/:rw
+      - ./certbot/www/:/var/www/certbot/:ro
+      - ./certbot/conf/:/etc/nginx/ssl/:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/letsencrypt/:rw
+    command: >
+      certonly --webroot
+      --webroot-path /var/www/certbot/
+      -d ${DOMAIN}
+    environment:
+      - DOMAIN=<your domain>
+    restart: "no"
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=86400
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=true
+    command: --label-enable
+    restart: unless-stopped
+
+volumes:
+  open-webui:
