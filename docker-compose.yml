@@ -1,8 +1,9 @@
-version: '3'
+version: '3.8'
 
 services:
   nginx:
     image: nginx:latest
+    container_name: nginx
     ports:
       - "80:80"
       - "443:443"
@@ -11,12 +12,25 @@ services:
       - ./nginx/logs:/var/log/nginx/:rw
       - ./certbot/www/:/var/www/certbot/:ro
       - ./certbot/conf/:/etc/nginx/ssl/:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      - open-webui
+    restart: always
+
+  xray:
+    image: ghcr.io/xtls/xray-core:latest
+    container_name: xray
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./xray/config.json:/usr/local/etc/xray/config.json:ro
+      - ./xray/logs:/var/log/xray:rw
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     restart: always
 
   certbot:
     image: certbot/certbot:latest
+    container_name: certbot
     volumes:
       - ./certbot/www/:/var/www/certbot/:rw
       - ./certbot/conf/:/etc/letsencrypt/:rw
@@ -25,21 +39,23 @@ services:
       --webroot-path /var/www/certbot/
       -d ${DOMAIN}
     environment:
-      - DOMAIN=<your domain>
+      - DOMAIN=<your_domain>
     restart: "no"
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
-    ports:
-      - "3000:8080"
+    container_name: open-webui
+    expose:
+      - "8080"
     volumes:
       - open-webui:/app/backend/data
     labels:
       - com.centurylinklabs.watchtower.enable=true
     restart: unless-stopped
-
+     
   watchtower:
     image: containrrr/watchtower:latest
+    container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
