@@ -15,8 +15,8 @@ mkdir -p nginx/conf nginx/logs certbot/conf certbot/www xray
 ```
 
 ### 2. Copy configuration files
-- Copy nginx.conf to nginx/conf/default.conf
-- Copy xray-config.json to xray/config.json
+- Copy nginx/default.conf to nginx/conf/default.conf
+- Copy xray/config.json to xray/config.json
 
 ### 3. Generate Xray keys (optional, if creating new config)
 ```bash
